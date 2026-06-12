@@ -1,153 +1,130 @@
 # ResumeAI — AI-Powered Job Application Tracker
 
-> Track every job application and get Claude-powered resume suggestions tailored to each role.
+> Track every job application, get AI-tailored resume suggestions, prepare for interviews, and check your resume's ATS score — all in one place.
+
+🔗 **Live demo:** https://resume-tracker-i9k6w1q8y-apurv12.vercel.app
+🔗 **GitHub:** https://github.com/apurv12-ai/resume-tracker-ai
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 14, React, TypeScript, Tailwind CSS |
+| Frontend | Next.js 14, React, TypeScript, Tailwind CSS, Recharts |
 | Backend | Node.js, Express, TypeScript |
-| Database | PostgreSQL via Prisma ORM |
-| AI | Anthropic Claude API |
+| Database | PostgreSQL (Supabase) via Prisma ORM |
+| AI | Google Gemini API (resume tailoring, interview prep, ATS analysis) |
 | Auth | JWT + bcrypt |
-| Deploy | Vercel (frontend) + Railway (backend) |
+| Deployment | Vercel (frontend) + Railway (backend) |
 
 ## Features
 
 - **JWT Authentication** — Secure register/login with bcrypt password hashing
-- **Kanban Board** — Drag-and-drop application tracking across 5 stages
-- **AI Resume Tailor** — Paste a job description → get tailored bullet points (Phase 3)
-- **Interview Prep** — Auto-generated Q&A for each role (Phase 3)
-- **Analytics Dashboard** — Charts showing application activity and conversion rates (Phase 4)
+- **Kanban Board** — Drag-and-drop application tracking across 5 stages (Saved → Applied → Interview → Offer → Rejected)
+- **Search & Filter** — Search by company/role, filter board by status
+- **AI Resume Tailor** — Paste a job description → get tailored bullet points, a custom summary, keywords, and a match score
+- **AI Interview Prep** — Auto-generated technical, behavioral, and company-specific interview questions with model answers
+- **ATS Resume Analyzer** — Upload a resume PDF → get an ATS compatibility score, strengths, missing keywords, and improvement suggestions
+- **Dashboard Analytics** — Charts for application activity over time and status breakdown, plus response/interview/offer rate metrics
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js 18+
-- PostgreSQL database (free tier: [Supabase](https://supabase.com) or [Railway](https://railway.app))
-- Anthropic API key from [console.anthropic.com](https://console.anthropic.com)
+- PostgreSQL database (free tier: [Supabase](https://supabase.com))
+- Google Gemini API key from [aistudio.google.com](https://aistudio.google.com)
 
 ### 1. Clone & install
 
 ```bash
-git clone https://github.com/yourusername/resume-tracker.git
-cd resume-tracker
+git clone https://github.com/apurv12-ai/resume-tracker-ai.git
+cd resume-tracker-ai
 
-# Install backend dependencies
 cd backend && npm install
-
-# Install frontend dependencies
 cd ../frontend && npm install
 ```
 
-### 2. Set up environment variables
+### 2. Environment variables
 
-**Backend** — copy `.env.example` to `.env`:
-```bash
-cd backend
-cp .env.example .env
-# Fill in DATABASE_URL, JWT_SECRET, ANTHROPIC_API_KEY
+**Backend** — create `backend/.env`:
+```env
+DATABASE_URL="postgresql://..."
+JWT_SECRET="<generate with: node -e \"console.log(require('crypto').randomBytes(64).toString('hex'))\">"
+JWT_EXPIRES_IN="7d"
+GEMINI_API_KEY="your-gemini-api-key"
+PORT=5000
+NODE_ENV=development
+FRONTEND_URL="http://localhost:3000"
 ```
 
-**Frontend** — copy `.env.local.example` to `.env.local`:
-```bash
-cd frontend
-cp .env.local.example .env.local
-# Set NEXT_PUBLIC_API_URL=http://localhost:5000/api
+**Frontend** — create `frontend/.env.local`:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
 ```
 
-### 3. Set up the database
+### 3. Database setup
 
 ```bash
 cd backend
-
-# Run Prisma migration (creates all tables)
 npx prisma migrate dev --name init
-
-# Generate Prisma client
 npx prisma generate
 ```
 
-### 4. Start development servers
+### 4. Run locally
 
 ```bash
-# Terminal 1 — backend
+# Terminal 1
 cd backend && npm run dev
 
-# Terminal 2 — frontend
+# Terminal 2
 cd frontend && npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — register an account and you're in.
+Open [http://localhost:3000](http://localhost:3000).
 
 ## Project Structure
 
 ```
-resume-tracker/
+resume-tracker-ai/
 ├── backend/
-│   ├── prisma/
-│   │   └── schema.prisma        # Database models
+│   ├── prisma/schema.prisma     # User, Application, Resume, AISuggestion models
 │   └── src/
-│       ├── controllers/         # Business logic
-│       ├── middleware/          # JWT auth guard
-│       ├── routes/              # Express routes
-│       ├── services/            # Claude AI service
-│       ├── lib/prisma.ts        # DB client singleton
-│       └── index.ts             # Express app entry
+│       ├── controllers/         # auth, applications, ai, ats, stats
+│       ├── middleware/           # JWT auth guard
+│       ├── routes/
+│       ├── services/             # Gemini AI integration
+│       └── index.ts
 │
 └── frontend/
     ├── app/
-    │   ├── auth/login/          # Login page
-    │   ├── auth/register/       # Register page
-    │   ├── dashboard/           # Main dashboard
-    │   ├── applications/        # Kanban board
-    │   └── ai-tailor/           # AI resume page
-    ├── components/              # Shared UI components
+    │   ├── auth/login, auth/register
+    │   ├── dashboard/             # Analytics with Recharts
+    │   ├── applications/          # Kanban board with search/filter
+    │   ├── ai-tailor/             # Resume tailor + interview prep
+    │   └── ats/                   # PDF resume ATS analyzer
     └── lib/
-        ├── api.ts               # Axios instance with JWT
-        └── auth.ts              # Token helpers
+        ├── api.ts                 # Axios instance with JWT
+        └── auth.ts                # Token helpers
 ```
 
 ## API Endpoints
 
-### Auth
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | POST | `/api/auth/register` | Public | Create account |
 | POST | `/api/auth/login` | Public | Login + get token |
 | GET | `/api/auth/me` | JWT | Get current user |
-
-### Applications (Phase 2)
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/applications` | JWT | Get all applications |
-| POST | `/api/applications` | JWT | Add application |
-| PUT | `/api/applications/:id` | JWT | Update application |
-| DELETE | `/api/applications/:id` | JWT | Delete application |
-
-### AI (Phase 3)
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| POST | `/api/ai/tailor` | JWT | Tailor resume to JD |
-| POST | `/api/ai/interview-prep` | JWT | Generate interview Q&A |
+| GET/POST/PUT/DELETE | `/api/applications` | JWT | Application CRUD |
+| POST | `/api/ai/tailor` | JWT | AI resume tailoring |
+| POST | `/api/ai/interview-prep` | JWT | AI interview prep |
+| POST | `/api/ats/analyze` | JWT | ATS resume PDF analysis |
+| GET | `/api/stats` | JWT | Dashboard analytics |
 
 ## Deployment
 
-### Frontend → Vercel
-```bash
-cd frontend
-npx vercel --prod
-# Set NEXT_PUBLIC_API_URL to your Railway backend URL
-```
-
-### Backend → Railway
-1. Push to GitHub
-2. Create new project on [railway.app](https://railway.app)
-3. Connect your repo → select `backend` folder
-4. Add environment variables (DATABASE_URL, JWT_SECRET, ANTHROPIC_API_KEY)
-5. Railway auto-deploys on every push
+- **Frontend**: Deployed on Vercel, root directory set to `frontend`
+- **Backend**: Deployed on Railway, root directory set to `backend`, build command `npm install && npx prisma generate && npm run build`, start command `npx prisma migrate deploy && npm start`
+- **Database**: Supabase PostgreSQL (session pooler connection)
 
 ---
 
-Built as part of a full-stack portfolio project. Phase 1: Auth | Phase 2: Kanban | Phase 3: AI | Phase 4: Analytics
+Built as a full-stack portfolio project demonstrating authentication, REST API design, database modeling, AI integration, and end-to-end deployment.
